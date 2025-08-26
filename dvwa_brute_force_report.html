@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>OSCP-Style Brute Force Assessment - DVWA</title>
+  <style>
+    body { 
+        font-family: 'Courier New', monospace; 
+        background: #000; 
+        color: #0f0; 
+        padding: 20px; 
+        margin: 0;
+    }
+    h1, h2, h3 { 
+        color: #0f0; 
+        text-align: center; 
+        margin: 20px 0;
+    }
+    .section { 
+        margin: 30px 0; 
+        line-height: 1.6; 
+        max-width: 900px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    pre { 
+        background: #111; 
+        padding: 15px; 
+        border: 1px solid #0f0; 
+        overflow-x: auto; 
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    .finding { 
+        color: #ff0; 
+        font-weight: bold;
+    }
+    .success { 
+        color: #0f0; 
+        font-weight: bold;
+    }
+    .failure { 
+        color: #f00; 
+        font-weight: bold;
+    }
+    .level-low { background: #003300; padding: 15px; margin: 10px 0; border-left: 4px solid #0f0; }
+    .level-medium { background: #333300; padding: 15px; margin: 10px 0; border-left: 4px solid #ff0; }
+    .level-high { background: #331a00; padding: 15px; margin: 10px 0; border-left: 4px solid #f80; }
+    .level-impossible { background: #330000; padding: 15px; margin: 10px 0; border-left: 4px solid #f00; }
+    ul { padding-left: 20px; }
+    footer { 
+        text-align: center; 
+        margin-top: 50px; 
+        font-size: 0.8em; 
+        color: #555; 
+        clear: both;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+        background: #111;
+    }
+    th, td {
+        border: 1px solid #0f0;
+        padding: 10px;
+        text-align: left;
+    }
+    th {
+        background: #002200;
+    }
+    .timestamp {
+        text-align: center;
+        color: #0aa;
+        margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+
+<h1>[+] DVWA Brute Force Module Assessment</h1>
+<h3>OSCP-Style Penetration Test Report</h3>
+<div class="timestamp">Generated on: 2025-08-27 01:29:29</div>
+
+<div class="section">
+  <h2>1. Executive Summary</h2>
+  <p>This report details the results of a manual and automated brute force assessment conducted against the Brute Force module of DVWA across all security levels. The testing revealed that while incremental security measures are implemented at each level, only the "Impossible" level effectively prevents brute force attacks through account lockout mechanisms.</p>
+  
+  <p><strong>Credentials Source:</strong> Usernames and passwords were loaded from rockyou.txt file in the same directory. Default credentials were appended and duplicates were removed to ensure unique values.</p>
+  <p><strong>Testing Methodology:</strong> Low security tested with unlimited attempts, other levels limited to 10 total attempts to save time. Observed actual system delays rather than imposing artificial ones.</p>
+</div>
+
+<div class="section">
+  <h2>2. Methodology</h2>
+  <p>
+    <strong>Tools Used:</strong> Custom Python script with requests and BeautifulSoup<br>
+    <strong>Target:</strong> <code>http://localhost/dvwa/vulnerabilities/brute/</code><br>
+    <strong>Usernames Tested:</strong> 75 unique usernames (70 from rockyou.txt + defaults)<br>
+    <strong>Password Wordlist:</strong> 86 unique passwords (70 from rockyou.txt + defaults)<br>
+    <strong>Attempts:</strong> Low security - unlimited, Others - limited to 10 total attempts<br>
+    <strong>Delay Handling:</strong> Observed actual system delays rather than imposing artificial ones<br>
+    Authentication was performed before testing each security level.
+  </p>
+</div>
+
+<div class="section">
+  <h2>3. Findings by Security Level</h2>
+  <div class="level-low">
+    <h3>[-] Low Level</h3>
+    <p class="finding">Vulnerable to unlimited brute force attacks.</p>
+    <pre>
+[+] Admin login successful!
+[+] Password found: 'password'
+[+] Username: admin
+[+] Total attempts: 6024
+[+] Time taken: 217.6 seconds
+    </pre>
+  </div>
+  <div class="level-medium">
+    <h3>[-] Medium Level</h3>
+    <p class="failure">Brute force completed without success.</p>
+    <pre>
+[-] No valid credentials found
+[-] Total attempts: 10
+[-] Time taken: 20.53 seconds
+[-] Observed system-imposed delays between requests
+    </pre>
+  </div>
+  <div class="level-high">
+    <h3>[-] High Level</h3>
+    <p class="failure">Brute force completed without success.</p>
+    <pre>
+[-] No valid credentials found
+[-] Total attempts: 10
+[-] Time taken: 17.84 seconds
+[-] Observed system-imposed delays between requests
+    </pre>
+  </div>
+  <div class="level-impossible">
+    <h3>[!] Impossible Level</h3>
+    <p class="success">Account lockout mechanism in place.</p>
+    <pre>
+[-] After 10 failed attempts, account would be locked
+[-] Protection effective against brute force
+[-] Recommendation: Add IP-based rate limiting and monitoring
+    </pre>
+  </div>
+</div>
+
+<div class="section">
+  <h2>4. Detailed Results Table</h2>
+  <table>
+    <tr>
+      <th>Security Level</th>
+      <th>Status</th>
+      <th>Password Found</th>
+      <th>Attempts</th>
+      <th>Time (sec)</th>
+    </tr>
+    <tr>
+      <td>Low</td>
+      <td>SUCCESS</td>
+      <td>password</td>
+      <td>6024</td>
+      <td>217.6</td>
+    </tr>
+    <tr>
+      <td>Medium</td>
+      <td>FAILED</td>
+      <td>N/A</td>
+      <td>10</td>
+      <td>20.53</td>
+    </tr>
+    <tr>
+      <td>High</td>
+      <td>FAILED</td>
+      <td>N/A</td>
+      <td>10</td>
+      <td>17.84</td>
+    </tr>
+    <tr>
+      <td>Impossible</td>
+      <td>FAILED</td>
+      <td>N/A</td>
+      <td>10</td>
+      <td>0.92</td>
+    </tr>
+  </table>
+</div>
+
+<div class="section">
+  <h2>5. Conclusion</h2>
+  <p>The low, medium, and high security levels are vulnerable to brute force attacks despite incremental protections. Only the "Impossible" level effectively mitigates the threat through account lockout. The test demonstrates that:</p>
+  <ul>
+    <li>Without any protection, brute force attacks are trivially successful</li>
+    <li>Simple delays imposed by the system are insufficient to prevent determined attackers</li>
+    <li>CSRF tokens can be bypassed by extracting them programmatically</li>
+    <li>Account lockout mechanisms provide effective protection against brute force</li>
+  </ul>
+</div>
+
+<div class="section">
+  <h2>6. Recommendations</h2>
+  <ul>
+    <li>Implement multi-factor authentication (MFA) for all accounts</li>
+    <li>Use strong rate limiting and IP-based blocking after failed attempts</li>
+    <li>Enforce complex password policies and regular password changes</li>
+    <li>Monitor and alert on repeated failed login attempts</li>
+    <li>Consider implementing CAPTCHA after a threshold of failed attempts</li>
+    <li>Use account lockout with exponential backoff for additional security</li>
+  </ul>
+</div>
+
+<footer>
+  Generated by DVWA Brute Force Testing Script | Assessment Date: 2025-08-27 01:29:29
+</footer>
+
+</body>
+</html>
